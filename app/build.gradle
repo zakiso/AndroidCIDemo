@@ -1,0 +1,92 @@
+apply plugin: 'com.android.application'
+
+//初始化配置信息 以后可以动态配置App信息,然后写入到assets/config.json中,在App初始化的时候去读取config.json的配置
+def configsInit() {
+    def configs = rootProject.ext.app_configs
+    String s = "{";
+    configs.each { key, value ->
+        if (project.hasProperty("app_" + key)) {
+            s = s + '"' + key + '":"' + project.getProperties().get("app_" + key).toString() + '",'
+        } else {
+            s = s + '"' + key + '":"' + value + '",'
+        }
+    }
+    s = s.substring(0, s.length() - 1) + "}";
+    File file = new File(getProject().name + "/src/main/assets/config.json")
+    file.write(s)
+}
+
+android {
+    //引用buildscript中的配置
+    def conf = rootProject.extensions.getByName("ext")
+    compileSdkVersion 24
+    buildToolsVersion "24.0.2"
+
+    defaultConfig {
+        //从conf中获取applicationId
+        applicationId conf.getAt("applicationId")
+        minSdkVersion 14
+        targetSdkVersion 24
+        //从conf中获取versionCode
+        versionCode Integer.parseInt(conf.getAt("versionCode"))
+        //从conf中获取versionName
+        versionName conf.getAt("versionName")
+    }
+
+    //建议把签名信息的敏感信息放在环境变量中
+    signingConfigs {
+        release {
+            storeFile file("../yourkey.jks")
+            storePassword "yourpwd"
+            keyAlias "youralias"
+            keyPassword "yourpwd"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            versionNameSuffix "_build_" + project.getProperties().get("suffix").toString()
+            signingConfig signingConfigs.release
+        }
+        debug {
+            debuggable true
+            versionNameSuffix "_build_develop_" + project.getProperties().get("suffix").toString()
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+
+    //给打包出来的Apk修改一下名字
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            //初始化配置信息
+            configsInit()
+            def file = output.outputFile
+            if (project.hasProperty('suffix')) {
+                if (file.name.contains("debug.apk")) {
+                    output.outputFile = new File(file.parent,
+                            file.name.replace("-debug.apk", "_develop_build_" +
+                                    project.getProperties().get("suffix").toString() +
+                                    ".apk"))
+                } else if (file.name.contains("release.apk")) {
+                    output.outputFile = new File(file.parent,
+                            file.name.replace("-release.apk", "_build_" +
+                                    project.getProperties().get("suffix").toString() +
+                                    ".apk"))
+                }
+            }
+        }
+    }
+
+}
+
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:24.2.0'
+}

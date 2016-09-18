@@ -1,0 +1,27 @@
+allprojects {
+    repositories {
+        jcenter()
+    }
+}
+
+ext {
+    //app info
+
+    appName = project.hasProperty("app_appName") ?
+            project.getProperties().get("app_appName") : "AndroidCITest"
+
+    applicationId = project.hasProperty("app_applicationId") ?
+            project.getProperties().get("app_applicationId") : "com.example.dzq.androidcicdtest"
+
+    versionCode = project.hasProperty("app_versionCode") ?
+            project.getProperties().get("app_versionCode") : "1"
+
+    versionName = project.hasProperty("app_versionName") ?
+            project.getProperties().get("app_versionName") : "0.0.1"
+
+    /*
+     *工程配置项
+     */
+    app_configs = [api_endpoint: "http://172.17.12.13:8480",
+                   test_id     : "123456"]
+}
